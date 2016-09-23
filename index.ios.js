@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import { AppRegistry } from 'react-native';
 
-var Main = require('./src/main');
+var Navigation = require('./src/navigation');
 
-AppRegistry.registerComponent('Pinetree', () => Main);
+AppRegistry.registerComponent('Pinetree', () => Navigation);

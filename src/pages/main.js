@@ -9,36 +9,56 @@ import {
 	TouchableHighlight
 } from 'react-native';
 import { RNLocation as Location } from 'NativeModules';
-import TimerMixin from 'react-timer-mixin';
-import styles from '../styles/styles';
+import Store from 'react-native-store';
+import styles from '../../styles/styles';
 
+const DB = {
+    'settings': Store.model('settings'),
+    'coordinates': Store.model('coordinates'),
+    'location': Store.model('location')
+}
+
+var LoadingEffect = require('react-native-loading-effect');
 var Dimensions = require('Dimensions');
 
 var firebase = require('firebase');
-var Api = require('./components/api.js');
+var Api = require('../components/api.js');
+var Profile = require('../components/profile.js');
 
 var _scrollView: ScrollView;
 
 var isLoaded = false;
 
 module.exports = React.createClass({
-	mixins: [TimerMixin],
+	mixins: [LoadingEffect.Mixin],
 	componentWillMount: function () {
 
-		var config = {
-			apiKey: "AIzaSyArPDhAnJXd4OALLbzKPj8vMzMTFOp7Ajo",
-			authDomain: "pinetree-12116.firebaseapp.com",
-			databaseURL: "https://pinetree-12116.firebaseio.com",
-			storageBucket: "pinetree-12116.appspot.com",
-		};
-		firebase.initializeApp(config);
+		DB.settings.find().then(resp => {
+			if(resp != null && resp[resp.length - 1].user != "") {
+				this.setState({
+					user: resp[resp.length - 1].user,
+					counter: resp[resp.length - 1].counter
+				});
+			} else {
+				var user = Profile();
+
+				DB.settings.add({
+				    user: user,
+				    counter: "3"
+			    });
+
+			    this.setState({
+			    	user: user,
+			    	counter: "3"
+			    });
+			}
+		});
 
 		firebase.auth().signInAnonymously().catch(function(error) {
 			var errorCode = error.code;
 			var errorMessage = error.message;
 		});
 
-	  	// Location.requestAlwaysAuthorization();
 	  	Location.requestWhenInUseAuthorization();
     	Location.startUpdatingLocation();
 	
@@ -60,7 +80,42 @@ module.exports = React.createClass({
 								messages: messageList
 							});
 						});
+
+				      	DB.coordinates.find().then(resp => {
+				      		var isSaved = false;
+				      		if(resp != null) {
+				      			var coordinates = Array.prototype.slice.call(resp);
+				      			
+				      			for(var i=0; i<coordinates.length; i++){
+					      			if(coordinates[i].name == (data.city+", "+data.state)){
+					      				isSaved = true;
+					      				break;
+					      			}
+					     		}
+
+				      		} else {
+				      			isSaved = false;
+				      		}
+
+				      		if(!isSaved){
+				      			DB.coordinates.add({
+				      				name: (data.city+", "+data.state),
+				      				longitude: location.longitude,
+				      				latitude: location.latitude,
+				  					date: new Date()
+			    				});
+			      			}
+
+				      	});
+
+				      	DB.location.add({
+						    longitude: location.longitude,
+							latitude: location.latitude
+						});
+
+
 						isLoaded = true;
+						this.dismissLoadingEffect();
 				    }
 
 		    	});
@@ -80,17 +135,54 @@ module.exports = React.createClass({
 							this.setState({
 								messages: messageList
 							});
-						});
-						isLoaded = true;
-				    }
+						})
 
+				      	DB.coordinates.find().then(resp => {
+				      		var isSaved = false;
+				      		if(resp != null) {
+				      			var coordinates = Array.prototype.slice.call(resp);
+				      			
+				      			for(var i=0; i<coordinates.length; i++){
+					      			if(coordinates[i].name == (data.city+", "+data.state)){
+					      				isSaved = true;
+					      				break;
+					      			}
+					     		}
+
+				      		} else {
+				      			isSaved = false;
+				      		}
+
+				      		if(!isSaved){
+				      			DB.coordinates.add({
+				      				name: (data.city+", "+data.state),
+				      				longitude: location.coords.longitude,
+				      				latitude: location.coords.latitude,
+				  					date: new Date()
+			    				});
+			      			}
+
+				      	});
+
+				      	DB.location.add({
+						    longitude: location.coords.longitude,
+							latitude: location.coords.latitude
+						});
+
+						isLoaded = true;
+						this.dismissLoadingEffect();
+				    }
 
 		    	});
 			} else {
+				// gps not found
 				
 			}
 		});
 
+	},
+	componentDidMount: function () {
+		
 	},
 	sortMessages: function (message) {
 		var messageList = this.state.messages.concat([message]);
@@ -108,16 +200,17 @@ module.exports = React.createClass({
 			latitude: '',
 			city_state: '',
 			city_state_clean: '',
-			user: 'guest1913',
+			user: '',
 			messages: []
 		}
 	},
 	render: function () {
-		return <View style={styles.container}>
+		return <View style={styles.container}> 
+
 			<View style={styles.header}>
 				<Text style={styles.title}>{this.state.city_state}</Text>
-				<TouchableHighlight style={styles.settingsbtn}>
-					<Image style={styles.settings} source={require('../img/settings.png')}/>
+				<TouchableHighlight style={styles.settingsbtn} onPress={this.settings} underlayColor={'#eeeeee'}>
+					<Image style={styles.settings} source={require('../../img/settings.png')}/>
 				</TouchableHighlight>
 			</View>
 
@@ -140,9 +233,11 @@ module.exports = React.createClass({
 				value={this.state.message}
 				onChangeText={(text) => this.setState({message: text})}/>
 				<TouchableHighlight style={styles.sendbtn} onPress={this.onPress} underlayColor={'#eeeeee'}>
-					<Image style={styles.sendbtnimage} source={require('../img/send.png')}/>
+					<Image style={styles.sendbtnimage} source={require('../../img/send.png')}/>
 				</TouchableHighlight>
 			</View>
+
+			<LoadingEffect isVisible={this.state.isVisible}/>  
 		</View>
 	},
 	getMessages: function () {
@@ -183,6 +278,10 @@ module.exports = React.createClass({
 
 		  	this.setState({message: ''});
 		}
-
+	},
+	settings: function () {
+		this.props.navigator.push({
+			name: 'settings',
+		});
 	}
 });

@@ -5,6 +5,7 @@ export default StyleSheet.create({
 	container: {
 		flex: 1,
 		marginTop: (Platform.OS === 'ios') ? 20 : 0,
+		backgroundColor: '#ffffff'
 	},
 	header: {
 		backgroundColor: '#eeeeee',
@@ -21,8 +22,8 @@ export default StyleSheet.create({
 		alignItems: 'center',
 	},
 	logo: {
-		width: 36,
-		height: 36
+		width: 24,
+		height: 24
 	},
 	title: {
 		flex: 5,
@@ -31,10 +32,20 @@ export default StyleSheet.create({
 		alignItems: 'center',
 		paddingLeft: 10
 	},
+	subtitle: {
+		fontSize: 18,
+		marginBottom: 10
+	},
+	item: {
+		flex: 1
+	},
 	settingsbtn: {
 		flex: 1,
 		justifyContent: 'center',
 		alignItems: 'center'
+	},
+	navigationview: {
+		flex: 1
 	},
 	settings: {
 		width: 24,
@@ -87,5 +98,17 @@ export default StyleSheet.create({
 	othermessage: {
 		backgroundColor: '#BCC951',
 		marginRight: 100
+	},
+	btn: {
+		padding: 10,
+		borderColor: '#588A32',
+		backgroundColor: '#BCC951',
+		borderRadius: 5,
+		width: 150,
+		justifyContent: 'center',
+		alignItems: 'center',
+	},
+	mylocation: {
+		flex: 1
 	}
 });
