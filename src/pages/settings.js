@@ -4,6 +4,7 @@ import {
 	Text,
 	Image,
 	ScrollView,
+	Linking,
 	TouchableHighlight
 } from 'react-native';
 import styles from '../../styles/styles';
@@ -49,7 +50,7 @@ module.exports = React.createClass({
 					latitude: resp[resp.length - 1].latitude,
 				});
 			}
-		});
+		});  
 
 		DB.coordinates.find().then(resp => {
 			if(resp != null){
@@ -70,7 +71,6 @@ module.exports = React.createClass({
 		}
 	},
 	render: function () {
-		console.log(this.state.latitude);
 		return <View style={styles.container}>
 			<View style={styles.header}>
 				<TouchableHighlight style={styles.logoholder} onPress={this.back} underlayColor={'#eeeeee'}>
@@ -99,7 +99,7 @@ module.exports = React.createClass({
 					<Text style={styles.subtitle}>My Account</Text>
 
 					<View style={{flexDirection:'row'}}>
-						<Text style={{flex: 1, padding: 10}}>Username: <Text style={{fontWeight: 'bold'}}>{this.state.user}</Text></Text>
+						<Text style={{flex: 2, padding: 10}}>Username: <Text style={{fontWeight: 'bold'}}>{this.state.user}</Text></Text>
 						<View style={{flex: 1, alignItems: 'flex-end'}}>
 							<TouchableHighlight style={styles.btn} onPress={this.generateNewUsername} underlayColor={'#588A32'}>
 								<Text>REGENERATE</Text>
@@ -111,9 +111,9 @@ module.exports = React.createClass({
 					
 
 					<View style={{flexDirection:'row', marginTop: 15}}>
-						<Text style={{padding: 10}}>Membership: <Text style={{fontWeight: 'bold'}}>Free</Text></Text>
+						<Text style={{flex: 2, padding: 10}}>Membership: <Text style={{fontWeight: 'bold'}}>Free</Text></Text>
 						<View style={{flex: 1, alignItems: 'flex-end'}}>
-							<TouchableHighlight style={[styles.btn, {backgroundColor:'#eeeeee'}]} underlayColor={'#dedede'} onPress={this.learnMore}>
+							<TouchableHighlight style={[styles.btn, {backgroundColor:'#eeeeee'}]} underlayColor={'#dedede'} onPress={() => this.openUrl("http://pinetreemobile.com/premium")}>
 								<Text>GET PREMIUM</Text>
 							</TouchableHighlight>
 						</View>
@@ -142,8 +142,14 @@ module.exports = React.createClass({
 		    });	
 		}
 	},
-	learnMore: function () {
-
+	openUrl: function (url) {
+		Linking.canOpenURL(url).then(supported => {
+	      if (supported) {
+	        Linking.openURL(url);
+	      } else {
+	        console.log('Don\'t know how to open URI: ' + url);
+	      }
+	    });
 	},
 	back: function () {
 		this.props.isRight = true;

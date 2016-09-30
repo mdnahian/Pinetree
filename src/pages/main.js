@@ -5,10 +5,12 @@ import {
 	Image,
 	TextInput,
 	ScrollView,
+	Linking,
 	DeviceEventEmitter,
 	TouchableHighlight
 } from 'react-native';
 import { RNLocation as Location } from 'NativeModules';
+import Spinner from 'react-native-loading-spinner-overlay';
 import Store from 'react-native-store';
 import styles from '../../styles/styles';
 
@@ -18,7 +20,6 @@ const DB = {
     'location': Store.model('location')
 }
 
-var LoadingEffect = require('react-native-loading-effect');
 var Dimensions = require('Dimensions');
 
 var firebase = require('firebase');
@@ -30,7 +31,6 @@ var _scrollView: ScrollView;
 var isLoaded = false;
 
 module.exports = React.createClass({
-	mixins: [LoadingEffect.Mixin],
 	componentWillMount: function () {
 
 		DB.settings.find().then(resp => {
@@ -74,11 +74,12 @@ module.exports = React.createClass({
 					});
 
 			      	if(!isLoaded){
-				      	firebase.database().ref('posts/' + (data.city+data.state).replace(" ", "")).orderByKey().limitToLast(50).on('child_added', (snapshot) => {
+				      	firebase.database().ref('posts/' + (data.city+data.state).replace(" ", "")).orderByKey().limitToLast(25).on('child_added', (snapshot) => {
 							var messageList = this.sortMessages(snapshot.val());
 							this.setState({
 								messages: messageList
 							});
+							this.dismissLoadingEffect();
 						});
 
 				      	DB.coordinates.find().then(resp => {
@@ -115,7 +116,6 @@ module.exports = React.createClass({
 
 
 						isLoaded = true;
-						this.dismissLoadingEffect();
 				    }
 
 		    	});
@@ -130,12 +130,15 @@ module.exports = React.createClass({
 					});
 
 			      	if(!isLoaded){
+
 				      	firebase.database().ref('posts/' + (data.city+data.state).replace(" ", "")).orderByKey().limitToLast(50).on('child_added', (snapshot) => {
 							var messageList = this.sortMessages(snapshot.val());
 							this.setState({
 								messages: messageList
 							});
-						})
+							this.dismissLoadingEffect();
+						});
+
 
 				      	DB.coordinates.find().then(resp => {
 				      		var isSaved = false;
@@ -170,15 +173,17 @@ module.exports = React.createClass({
 						});
 
 						isLoaded = true;
-						this.dismissLoadingEffect();
 				    }
 
 		    	});
 			} else {
 				// gps not found
-				
 			}
 		});
+
+		setTimeout(() => {
+			this.dismissLoadingEffect();
+		}, 5000);
 
 	},
 	componentDidMount: function () {
@@ -201,7 +206,8 @@ module.exports = React.createClass({
 			city_state: '',
 			city_state_clean: '',
 			user: '',
-			messages: []
+			messages: [],
+			isLoadingVisible: true
 		}
 	},
 	render: function () {
@@ -229,15 +235,17 @@ module.exports = React.createClass({
 
 			<View style={styles.messagebar}>
 			<TextInput 
+				returnKeyType='go'
 				style={styles.messageinput}
 				value={this.state.message}
-				onChangeText={(text) => this.setState({message: text})}/>
+				onChangeText={(text) => this.setState({message: text})}
+				onSubmitEditing={this.onPress}/>
 				<TouchableHighlight style={styles.sendbtn} onPress={this.onPress} underlayColor={'#eeeeee'}>
 					<Image style={styles.sendbtnimage} source={require('../../img/send.png')}/>
 				</TouchableHighlight>
 			</View>
 
-			<LoadingEffect isVisible={this.state.isVisible}/>  
+			<Spinner visible={this.state.isLoadingVisible}/>
 		</View>
 	},
 	getMessages: function () {
@@ -249,7 +257,7 @@ module.exports = React.createClass({
 			}
 
 			return <View key={id} style={[styles.message, isMine ? styles.mymessage : styles.othermessage]}>
-				<Text style={styles.messagetxt}>{message.message}</Text>
+				<Text onPress={() => this.messagePressed(message.message)} style={styles.messagetxt}>{message.message}</Text>
 				<Text style={styles.messageuser}>{message.user}</Text>
 			</View>
 		});
@@ -262,6 +270,16 @@ module.exports = React.createClass({
 	        text += possible.charAt(Math.floor(Math.random() * possible.length));
 
 	    return text;
+	},
+	dismissLoadingEffect: function () {
+		this.setState({
+			isLoadingVisible: false
+		})
+	},
+	showLoadingEffect: function () {
+		this.setState({
+			isLoadingVisible: true
+		})
 	},
 	onPress: function () {
 		if(this.state.message != ""){
@@ -279,9 +297,35 @@ module.exports = React.createClass({
 		  	this.setState({message: ''});
 		}
 	},
+	messagePressed: function (message) {
+		var s = message.split(' ');
+		for(var i=0; i<s.length; i++){
+			this.openUrl(s[i]);
+		}
+	},
+	openUrl: function (url) {
+		try{
+			Linking.canOpenURL(url).then(supported => {
+		      if (supported) {
+		        Linking.openURL(url);
+		      } else {
+		        console.log('Don\'t know how to open URI: ' + url);
+		      }
+		    });
+		} catch (err){
+			console.log('Don\'t know how to open URI: ' + url);
+		}
+		
+	},
 	settings: function () {
-		this.props.navigator.push({
-			name: 'settings',
-		});
+		this.showLoadingEffect();
+
+		setTimeout(() => {
+			this.props.navigator.push({
+				name: 'settings',
+			});
+			this.dismissLoadingEffect();
+		}, 500);
+		
 	}
 });

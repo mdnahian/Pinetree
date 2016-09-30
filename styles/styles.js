@@ -104,7 +104,7 @@ export default StyleSheet.create({
 		borderColor: '#588A32',
 		backgroundColor: '#BCC951',
 		borderRadius: 5,
-		width: 150,
+		width: 125,
 		justifyContent: 'center',
 		alignItems: 'center',
 	},
